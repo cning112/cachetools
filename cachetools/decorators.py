@@ -3,7 +3,7 @@ import functools
 from .keys import hashkey
 
 
-def cached(cache, key=hashkey, lock=None):
+def cached(cache, key=hashkey, lock=None, ignore=None):
     """Decorator to wrap a function with a memoizing callable that saves
     results in a cache.
 
@@ -21,7 +21,8 @@ def cached(cache, key=hashkey, lock=None):
                     pass  # key not found
                 v = func(*args, **kwargs)
                 try:
-                    cache[k] = v
+                    if ignore is None or not ignore(v, *args, **kwargs):
+                        cache[k] = v
                 except ValueError:
                     pass  # value too large
                 return v
@@ -35,8 +36,9 @@ def cached(cache, key=hashkey, lock=None):
                     pass  # key not found
                 v = func(*args, **kwargs)
                 try:
-                    with lock:
-                        cache[k] = v
+                    if ignore is None or not ignore(v, *args, **kwargs):
+                        with lock:
+                            cache[k] = v
                 except ValueError:
                     pass  # value too large
                 return v
@@ -44,7 +46,7 @@ def cached(cache, key=hashkey, lock=None):
     return decorator
 
 
-def cachedmethod(cache, key=hashkey, lock=None):
+def cachedmethod(cache, key=hashkey, lock=None, ignore=None):
     """Decorator to wrap a class or instance method with a memoizing
     callable that saves results in a cache.
 
@@ -62,7 +64,8 @@ def cachedmethod(cache, key=hashkey, lock=None):
                     pass  # key not found
                 v = method(self, *args, **kwargs)
                 try:
-                    c[k] = v
+                    if ignore is None or not ignore(v, *args, **kwargs):
+                        c[k] = v
                 except ValueError:
                     pass  # value too large
                 return v
@@ -79,8 +82,9 @@ def cachedmethod(cache, key=hashkey, lock=None):
                     pass  # key not found
                 v = method(self, *args, **kwargs)
                 try:
-                    with lock(self):
-                        c[k] = v
+                    if ignore is None or not ignore(v, *args, **kwargs):
+                        with lock(self):
+                            c[k] = v
                 except ValueError:
                     pass  # value too large
                 return v
